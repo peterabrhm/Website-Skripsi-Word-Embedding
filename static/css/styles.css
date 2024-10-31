@@ -1,0 +1,20 @@
+body {
+    background-color: #f8f9fa;
+}
+
+h1, h2 {
+    color: #343a40;
+}
+
+.list-group-item {
+    margin-bottom: 10px;
+    border-radius: 5px;
+}
+
+.navbar-brand, .nav-link {
+    font-weight: bold;
+}
+
+.new-search-try-again-btn {
+    margin-bottom: 40px;
+}

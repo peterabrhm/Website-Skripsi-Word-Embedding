@@ -1,0 +1,77 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="text-center" id="main-content">
+    <h1 class="mb-4">Welcome to the Document Search Engine</h1>
+    <form id="search-form" method="POST" action="/">
+        <div class="input-group mb-3">
+            <input type="text" class="form-control" name="query" placeholder="Enter your search query..." required>
+            <button class="btn btn-primary" type="submit">Search</button>
+        </div>
+    </form>
+    {% if error %}
+    <div class="alert alert-danger" role="alert">
+        {{ error }}
+    </div>
+    {% endif %}
+</div>
+
+<!-- Loading popup with timer -->
+<div id="loading-popup">
+    <h2>Searching...</h2>
+    <p>Time Elapsed: <span id="timer">0</span> seconds</p>
+</div>
+
+<!-- CSS for blur effect and hidden popup -->
+<style>
+    /* Initially hide the popup with both display and visibility */
+    #loading-popup {
+        display: none;
+        visibility: hidden;
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: rgba(0, 0, 0, 0.5);
+        color: white;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        flex-direction: column;
+        z-index: 10;
+    }
+
+    .blur {
+        filter: blur(5px);
+        transition: filter 0.3s ease;
+    }
+</style>
+
+<!-- JavaScript for loading popup, timer, and blur effect -->
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const form = document.getElementById('search-form');
+        const loadingPopup = document.getElementById('loading-popup');
+        const mainContent = document.getElementById('main-content');
+        let timerInterval;
+
+        form.addEventListener('submit', function(event) {
+            // Show the loading popup and add blur effect
+            loadingPopup.style.display = 'flex';
+            loadingPopup.style.visibility = 'visible';
+            mainContent.classList.add('blur');
+
+            // Start the timer immediately
+            let timeElapsed = 0;
+            const timerElement = document.getElementById('timer');
+            timerInterval = setInterval(() => {
+                timeElapsed += 1;
+                timerElement.innerText = timeElapsed;
+            }, 1000);
+
+            // Allow form submission to proceed without delay
+        });
+    });
+</script>
+{% endblock %}
