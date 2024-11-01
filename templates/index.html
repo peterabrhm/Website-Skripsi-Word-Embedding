@@ -20,6 +20,7 @@
 <div id="loading-popup">
     <h2>Searching...</h2>
     <p>Time Elapsed: <span id="timer">0</span> seconds</p>
+    <button id="cancel-button" class="btn btn-danger mt-3">Cancel</button>
 </div>
 
 <!-- CSS for blur effect and hidden popup -->
@@ -54,6 +55,7 @@
         const form = document.getElementById('search-form');
         const loadingPopup = document.getElementById('loading-popup');
         const mainContent = document.getElementById('main-content');
+        const cancelButton = document.getElementById('cancel-button')
         let timerInterval;
 
         form.addEventListener('submit', function(event) {
@@ -69,9 +71,24 @@
                 timeElapsed += 1;
                 timerElement.innerText = timeElapsed;
             }, 1000);
-
-            // Allow form submission to proceed without delay
         });
+
+        cancelButton.addEventListener('click', function() {
+            fetch('/cancel-search', {
+                method: 'POST',
+                credentials: 'same-origin'
+            })
+            .then(response => {
+                clearInterval(timerInterval)
+
+                loadingPopup.style.display = 'none';
+                loadingPopup.style.visibility = 'hidden';
+                mainContent.classList.remove('blur');
+            })
+            .catch(error => {
+                console.error('Error:', error);
+            })
+        })
     });
 </script>
 {% endblock %}

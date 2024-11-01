@@ -1,4 +1,4 @@
-from flask import Flask, render_template, request
+from flask import Flask, render_template, request, session
 import numpy as np
 import pandas as pd
 from gensim.models import KeyedVectors
@@ -9,8 +9,13 @@ import os
 import re
 from tqdm import tqdm
 import time
+from threading import Lock
 
 app = Flask(__name__)
+app.secret_key = 'hai peter'
+
+cancel_lock = Lock()
+cancellation_flags = {}
 
 def load_resources(word2vec_model_path, lookup_file_path, paragraph_lookup_path, vectorizer_path):
     # Load the Word2Vec model
@@ -109,10 +114,18 @@ def search(query, vectorizer, expanded_document_dict, lookup_dict, word2vec_mode
     embedding_part = np.mean([word2vec_model[word] for word in query_tokens if word in word2vec_model], axis=0)
 
     query_vector = {'sparse': sparse_part, 'embedding': embedding_part}
+
+    session_id = session.get('session_id')
     
     document_dict_similarities = {}
     # Compute similarities between the query and each document
-    for doc_id, doc_vector in expanded_document_dict.items():
+    for idx, (doc_id, doc_vector) in enumerate(expanded_document_dict.items()):
+        if idx % 1000 == 0:
+            with cancel_lock:
+                if cancellation_flags.get(session_id):
+                    print("Search cancelled by the user.")
+                    return []
+            
         similarity = custom_cosine_similarity(query_vector, doc_vector)
         document_dict_similarities[doc_id] = similarity
     
@@ -183,16 +196,30 @@ document_dict = load_txt(vectors_path)
 
 top_n = 10
 
+@app.route('/cancel-search', methods=['POST'])
+def cancel_search():
+    session_id = session.get('session_id')
+    with cancel_lock:
+        cancellation_flags[session_id] = True
+    return '', 204
+
+@app.before_request
+def assign_session_id():
+    if 'session_id' not in session:
+        session['session_id'] = str(time.time()) + str(np.random.rand())
+
 @app.route('/', methods=['GET', 'POST'])
 def index():
+    session_id = session.get('session_id')
+    with cancel_lock:
+        cancellation_flags[session_id] = False
+
     if request.method == 'POST':
         query = request.form.get('query')
         if query:
             start_time = time.time()
-            
             results = search(query, vectorizer, document_dict, lookup_dict, word2vec_model, paragraph_dict, top_n)
             search_time = round(time.time() - start_time, 4)
-            
             return render_template('results.html', query=query, results=results, search_time=search_time)
         else:
             error = "Please enter a search query."
